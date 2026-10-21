@@ -31,34 +31,6 @@ Model::Model(const string filename){
         }
     }
 
-    // 建立映射关系
-    vector<int> idx(nfaces());
-    for(int i = 0; i< nfaces() ;i++){
-        idx[i] = i;
-    }
-
-    std::cerr << "# v# " << nverts() << " f# "  << nfaces() << std::endl;
-
-    // 按照z深度对三角形排序；按照三角形当中z的最小值；升序排列
-    sort(idx.begin(), idx.end(),
-              [&](const int& a, const int& b) { // given two triangles, compare their min z coordinate
-                  float aminz = std::min(vert(a, 0).z,
-                                         std::min(vert(a, 1).z,
-                                                  vert(a, 2).z));
-                  float bminz = std::min(vert(b, 0).z,
-                                         std::min(vert(b, 1).z,
-                                                  vert(b, 2).z));
-                  return aminz < bminz;
-              });
-    
-    // 存储排序后的顶点坐标；因为面按照z最小值排序了
-    vector<int> facet_vrt2(nfaces()*3); 
-    for(int i = 0;i<nfaces();i++){
-        for(int j = 0;j <3 ;j++){
-            facet_vrt2[i*3 + j] = facet_vrt[idx[i]*3 + j];
-        }
-    }
-    facet_vrt = std::move(facet_vrt2);
     
 }
 

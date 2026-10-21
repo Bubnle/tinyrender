@@ -8,6 +8,14 @@ using namespace std;
 template<int n> 
 struct vec{
     double data[n] = {0};
+    // 为什么要写两个
+
+    // 只写非 const 版本，const vec3& 就没法用 [] 读取，比如下面这种很常见的写法会编译不过：
+
+    // cpp
+    // void f(const vec3& v) { double x = v[0]; }   // 需要 const 版本
+
+    // 所以标准做法是：非 const 版本返回引用（可改），const 版本返回值或 const 引用（只读）。
     double& operator[](const int i) {assert(i >= 0 && i<n); return data[i];}
     double operator[](const int i) const {assert(i >= 0 && i<n); return data[i];}
 };

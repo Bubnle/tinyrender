@@ -187,6 +187,8 @@ void triangle(int ax, int ay, int bx, int by, int cx, int cy, TGAImage &framebuf
     }
 }
 
+// 背部剔除 通过三角形的有效面积正负
+// 用z来表示灰度
 void triangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz, TGAImage &framebuffer) {
     int bbminx = std::min(std::min(ax, bx), cx); // bounding box for the triangle
     int bbminy = std::min(std::min(ay, by), cy); // defined by its top left and bottom right corners
@@ -208,6 +210,7 @@ void triangle(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, in
     }
 }
 
+// 颜色插值
 void traingle(int ax, int ay, TGAColor colorA, int bx, int by, TGAColor colorB, int cx, int cy, TGAColor colorC, TGAImage& framebuffer){
     int bbminx = min(ax, min(bx , cx));
     int bbminy = min(ay, min(by, cy));
@@ -232,6 +235,39 @@ void traingle(int ax, int ay, TGAColor colorA, int bx, int by, TGAColor colorB, 
 
 }
 
+// 此时规定屏幕指向人的方向是z的正方向
+// 所以 z越大越近
+void triangleZBuffer(int ax, int ay, int az, int bx, int by, int bz, int cx, int cy, int cz,TGAImage &zbuffer, TGAImage &framebuffer, TGAColor color) {
+    int bbminx = std::min(std::min(ax, bx), cx); // bounding box for the triangle
+    int bbminy = std::min(std::min(ay, by), cy); // defined by its top left and bottom right corners
+    int bbmaxx = std::max(std::max(ax, bx), cx);
+    int bbmaxy = std::max(std::max(ay, by), cy);
+    double total_area = signed_triangle_area(ax, ay, bx, by, cx, cy);
+    if (total_area<1) return; // backface culling + discarding triangles that cover less than a pixel
+
+#pragma omp parallel for
+    for (int x=bbminx; x<=bbmaxx; x++) {
+        for (int y=bbminy; y<=bbmaxy; y++) {
+            double alpha = signed_triangle_area(x, y, bx, by, cx, cy) / total_area;
+            double beta  = signed_triangle_area(x, y, cx, cy, ax, ay) / total_area;
+            double gamma = signed_triangle_area(x, y, ax, ay, bx, by) / total_area;
+            if (alpha<0 || beta<0 || gamma<0) continue; // negative barycentric coordinate => the pixel is outside the triangle
+            unsigned char z = static_cast<unsigned char>(alpha * az + beta * bz + gamma * cz);
+            // 与对应位置的灰度值比较
+            if(z <= zbuffer.get(x, y)[0]) continue;
+            zbuffer.set(x, y, {z});
+            framebuffer.set(x, y, color);
+        }
+    }
+}
+
+// 保留深度信息
+// 将坐标[-1,1] 映射到 [0, 1] 后再扩大到[0, width]
+tuple <int, int, int> projectWithZ(vec3 v){
+        return { (v.x + 1.) *  width/2,       // Second, since the input models are scaled to have fit in the [-1,1]^3 world coordinates,
+             (v.y + 1.) * height/2,       // we want to shift the vector (x,y) and then scale it to span the entire screen.
+             (v.z + 1.) *   255./2 };
+}
 
 void triangleTestOriginal(){
     constexpr int width  = 128;
@@ -293,9 +329,29 @@ void homework2(const string& filename){
     framebuffer.write_tga_file("homework2-drwaer-alogrithm.tga");
 }
 
+// 
+void testZbuffer(){
+    constexpr int width  = 800;
+    constexpr int height = 800;
+    Model model("./diablo3_pose.obj");
+    TGAImage zbuffer(width, height, TGAImage::GRAYSCALE);
+    TGAImage framebuffer(width, height, TGAImage::RGB);
+    for (int i=0; i<model.nfaces(); i++) { // iterate through all triangles
+        auto [ax, ay, az] = projectWithZ(model.vert(i, 0));
+        auto [bx, by, bz] = projectWithZ(model.vert(i, 1));
+        auto [cx, cy, cz] = projectWithZ(model.vert(i, 2));
+        TGAColor rnd;
+        for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
+        triangleZBuffer(ax, ay, az, bx, by, bz, cx, cy, cz, zbuffer, framebuffer, rnd);
+    }
+
+    framebuffer.write_tga_file("ZbufferResColor.tga");
+    zbuffer.write_tga_file("ZbufferRes.tga");
+}
+
 
 int main(int argc, char** argv) {
-    homework2("diablo3_pose.obj");
+    testZbuffer();
     return 0;
 }
 

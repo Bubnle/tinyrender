@@ -409,6 +409,7 @@ void testPerspective(){
 }
 
 // 齐次坐标
+
 // 视口变化 的矩阵形式是先缩放再平移
 // 视口左上角 x , y
 // [-1,1] x [-1,1]-> [x, x + w] x [y, y + h]
@@ -416,11 +417,14 @@ void viewport(const int x, const int y, const int w, const int h) {
     ViewPort = {{{w/2., 0, 0, x+w/2.}, {0, h/2., 0, y+h/2.}, {0,0,1,0}, {0,0,0,1}}};
 }
 
-
+// 透视矩阵
+void perspective(const double f) {
+    Perspective = {{{1,0,0,0}, {0,1,0,0}, {0,0,1,0}, {0,0, -1/f,1}}};
+}
 
 
 int main(int argc, char** argv) {
-    testPerspective();
+
     return 0;
 }
 

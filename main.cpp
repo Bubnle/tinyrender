@@ -4,6 +4,9 @@
 #include <ctime>
 using namespace std;
 
+// 齐次坐标 来表示变换矩阵 mv 就是模型矩阵和视图矩阵
+mat<4,4> ModelView, ViewPort, Perspective ;
+
 constexpr int width  = 800;
 constexpr int height = 800;
 
@@ -404,6 +407,16 @@ void testPerspective(){
     framebuffer.write_tga_file("framebufferRotatetestPerspective.tga");
     zbuffer.write_tga_file("zbufferRotatetestPerspective.tga");
 }
+
+// 齐次坐标
+// 视口变化 的矩阵形式是先缩放再平移
+// 视口左上角 x , y
+// [-1,1] x [-1,1]-> [x, x + w] x [y, y + h]
+void viewport(const int x, const int y, const int w, const int h) {
+    ViewPort = {{{w/2., 0, 0, x+w/2.}, {0, h/2., 0, y+h/2.}, {0,0,1,0}, {0,0,0,1}}};
+}
+
+
 
 
 int main(int argc, char** argv) {

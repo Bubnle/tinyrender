@@ -349,7 +349,7 @@ void testZbuffer(){
     zbuffer.write_tga_file("ZbufferRes.tga");
 }
 
-// 相机操作 （旋转矩阵）
+// 相机操作 模型矩阵
 vec3 rot(vec3 v){
     constexpr double a = M_PI / 6 ;
     mat<3,3> Ry= {

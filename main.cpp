@@ -349,9 +349,65 @@ void testZbuffer(){
     zbuffer.write_tga_file("ZbufferRes.tga");
 }
 
+// 相机操作 （旋转矩阵）
+vec3 rot(vec3 v){
+    constexpr double a = M_PI / 6 ;
+    mat<3,3> Ry= {
+            cos(a),     0,  sin(a),
+            0,          1,  0,
+            -sin(a),    0,  cos(a)    
+    };
+    return Ry * v ;
+}
+
+void TestRotate(){
+    constexpr int width  = 800;
+    constexpr int height = 800;
+    Model model("african_head.obj");
+    TGAImage framebuffer(width, height, TGAImage::RGB);
+    TGAImage     zbuffer(width, height, TGAImage::GRAYSCALE);
+
+    for (int i=0; i<model.nfaces(); i++) { // iterate through all triangles
+        auto [ax, ay, az] = projectWithZ(rot(model.vert(i, 0)));
+        auto [bx, by, bz] = projectWithZ(rot(model.vert(i, 1)));
+        auto [cx, cy, cz] = projectWithZ(rot(model.vert(i, 2)));
+        TGAColor rnd;
+        for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
+        triangleZBuffer(ax, ay, az, bx, by, bz, cx, cy, cz, zbuffer, framebuffer, rnd);
+    }
+
+    framebuffer.write_tga_file("framebufferRotate.tga");
+    zbuffer.write_tga_file("zbufferRotate.tga");
+}
+
+vec3 perspectiveProject(vec3 v) {
+    constexpr double c = 3.;
+    return v / (1-v.z/c);
+}
+
+void testPerspective(){
+    constexpr int width  = 800;
+    constexpr int height = 800;
+    Model model("african_head.obj");
+    TGAImage framebuffer(width, height, TGAImage::RGB);
+    TGAImage     zbuffer(width, height, TGAImage::GRAYSCALE);
+
+    for (int i=0; i<model.nfaces(); i++) { // iterate through all triangles
+        auto [ax, ay, az] = projectWithZ(perspectiveProject((rot(model.vert(i, 0)))));
+        auto [bx, by, bz] = projectWithZ(perspectiveProject(rot(model.vert(i, 1))));
+        auto [cx, cy, cz] = projectWithZ(perspectiveProject(rot(model.vert(i, 2))));
+        TGAColor rnd;
+        for (int c=0; c<3; c++) rnd[c] = std::rand()%255;
+        triangleZBuffer(ax, ay, az, bx, by, bz, cx, cy, cz, zbuffer, framebuffer, rnd);
+    }
+
+    framebuffer.write_tga_file("framebufferRotatetestPerspective.tga");
+    zbuffer.write_tga_file("zbufferRotatetestPerspective.tga");
+}
+
 
 int main(int argc, char** argv) {
-    testZbuffer();
+    testPerspective();
     return 0;
 }
 
